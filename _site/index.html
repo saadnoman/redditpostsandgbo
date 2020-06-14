@@ -294,6 +294,57 @@ $(document).ready(function () {
 </div>
 
 
+<div id="library-and-read-files" class="section level3">
+<h3>library and read files</h3>
+<pre class="r"><code>library(dplyr)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;dplyr&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     filter, lag</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     intersect, setdiff, setequal, union</code></pre>
+<pre class="r"><code>library(ggplot2)
+library(tidyr)
+
+posts_df &lt;- read.csv(&quot;./data/movies_may_2015_posts.csv&quot;, stringsAsFactors = FALSE)
+gbo_df &lt;- read.csv(&quot;./data/movies_may_2015_gbo.csv&quot;, stringsAsFactors = FALSE)</code></pre>
+</div>
+<div id="data-clean-up" class="section level3">
+<h3>data clean up</h3>
+<pre class="r"><code>#fix date
+posts_df &lt;- posts_df %&gt;%
+  mutate(date_post = as.Date(created_date, &quot;%Y-%m-%d&quot;))
+
+gbo_df &lt;- gbo_df %&gt;%
+  mutate(gbo_date = as.Date(date, &quot;%m/%d/%y&quot;),
+         release_date = as.Date(release_date, &quot;%m/%d/%y&quot;))</code></pre>
+</div>
+<div id="join-data-sources" class="section level2">
+<h2>join data sources</h2>
+<pre class="r"><code># outer join posts and gbo on movie name and date.  each row =&gt; movie_name, date, gbo on that day, number of posts on that day
+gbo_post_df &lt;- posts_df %&gt;% 
+  group_by(movie_name, date_post) %&gt;% 
+  count() %&gt;% #count number of posts per movie on date
+  ungroup() %&gt;%
+  full_join(select(gbo_df, gbo_date, movie_name, Daily), by = c(&quot;movie_name&quot; = &quot;movie_name&quot;, &quot;date_post&quot; = &quot;gbo_date&quot;))
+names(gbo_post_df) &lt;- c(&quot;movie_name&quot;, &quot;date&quot;, &quot;num_posts&quot;, &quot;Daily&quot;)
+
+# covert gbo from char to num
+gbo_post_df &lt;- gbo_post_df %&gt;% mutate(gbo_daily = as.numeric(gsub(&quot;[$,]&quot;,&quot;&quot;,Daily)))
+gbo_post_df &lt;- select(gbo_post_df, -Daily)
+
+# calculate days from / to release date, and log values
+gbo_post_df &lt;- inner_join(gbo_post_df, select(gbo_df, movie_name, release_date) %&gt;% distinct(), by = c(&quot;movie_name&quot;)) %&gt;%
+  mutate(daysFromToRelease = date - release_date) %&gt;%
+  mutate(daysFromToRelease = as.integer(daysFromToRelease),
+         log_gbo_daily = log(gbo_daily),
+         log_num_posts = log(num_posts+1))
+  
+# pivot long
+gbo_post_df_long &lt;- pivot_longer(gbo_post_df, cols = c(&quot;num_posts&quot;,&quot;gbo_daily&quot;,&quot;log_num_posts&quot;,&quot;log_gbo_daily&quot;), names_to = &quot;series&quot;)</code></pre>
+</div>
 <div id="what-is-the-daily-gbo-trendafter-movie-is-released" class="section level2">
 <h2>What is the daily GBO trendafter movie is released?</h2>
 <pre class="r"><code>gbo_post_df_long %&gt;%
@@ -309,7 +360,7 @@ $(document).ready(function () {
                 color = &quot;red&quot;, size=0.5) +
   scale_x_continuous(limits = c(0,100))</code></pre>
 <pre><code>## `geom_smooth()` using method = &#39;gam&#39; and formula &#39;y ~ s(x, bs = &quot;cs&quot;)&#39;</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <ul>
 <li>Declining trend of daliy GBO after release date</li>
 </ul>
@@ -328,7 +379,7 @@ $(document).ready(function () {
   theme_bw() +
   labs(title = &quot;Number of Reddit Posts before and after release date&quot;, x = &quot;Days Before/After Release (day 0 is release date)&quot;, y = &quot;Log Number Posts&quot;) </code></pre>
 <pre><code>## `geom_smooth()` using method = &#39;loess&#39; and formula &#39;y ~ x&#39;</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <ul>
 <li>Number of posts increase as release date approaches, then declines. With the peak about 5 days after release date.</li>
 </ul>
@@ -360,7 +411,7 @@ gbo_post_df_long %&gt;%
                 color = &quot;red&quot;, size=0.5) +
   scale_x_continuous(limits = c(0,100))</code></pre>
 <pre><code>## `geom_smooth()` using method = &#39;loess&#39; and formula &#39;y ~ x&#39;</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 <ul>
 <li>GBO of movies with more posts overall, declines sharply then flattens out</li>
 <li>For movies with lower number of posts, GBO keeps on declines at a steady rate</li>
@@ -390,7 +441,7 @@ gbo_post_df_na_zero_cumsum %&gt;%
   geom_smooth(method = &quot;lm&quot;) +
   theme_bw() +
   labs(title = &quot;Positive association of increasing GBO as Number of Posts increase&quot;, x = &quot;Log Number of Posts&quot;, y = &quot;Log Daily GBO&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <pre class="r"><code>#num of movies: 34
 gbo_post_df_na_zero_cumsum %&gt;%
   filter(release_date &gt;= &quot;2015-05-01&quot;  &amp; log_gbo_daily_sum &gt; 0) %&gt;% distinct(movie_name)</code></pre>

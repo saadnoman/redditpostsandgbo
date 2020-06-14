@@ -296,8 +296,16 @@ $(document).ready(function () {
 
 <div id="library-and-read-files" class="section level3">
 <h3>library and read files</h3>
-<pre class="r"><code>library(dplyr)
-library(ggplot2)
+<pre class="r"><code>library(dplyr)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;dplyr&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     filter, lag</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     intersect, setdiff, setequal, union</code></pre>
+<pre class="r"><code>library(ggplot2)
 library(tidyr)
 
 posts_df &lt;- read.csv(&quot;./data/movies_may_2015_posts.csv&quot;, stringsAsFactors = FALSE)
