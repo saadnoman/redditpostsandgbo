@@ -293,18 +293,18 @@ $(document).ready(function () {
 
 <div id="summary" class="section level3">
 <h3>Summary</h3>
-<p>Movies generally make the most box office earnings (Gross Box Office, GBO) during their opening week, after which the earnings decline in subsequent weeks. In this study, the goal is to see if and what effect social media “chatter” (specifically posts on Reddit) for a movie will have on its GBO after its release. Do more posts of the movie lead to slower decline of the movie’s GBO?</p>
+<p>Movies generally make the most box office earnings (Gross Box Office, GBO) during their opening week, after which the earnings decline in subsequent weeks. In this study, the goal is to see if and what effect social media “chatter” (specifically posts on Reddit) for a movie will have on its GBO after its release. Do more posts of the movie lead to a slower decline in movie’s GBO?</p>
 <p><em>Data sources:</em></p>
-<p>The data was obtained from the following and is limited to the month of May 2015</p>
+<p>The data was obtained from the following sources, and is limited to the month of May 2015</p>
 <ul>
 <li>Reddit: using movies subreddit to determine number of posts</li>
 <li>Box office mojo: to obtain daily movie GBO</li>
 </ul>
 <p><em>Data dictionary</em></p>
 <ul>
-<li>Date</li>
+<li>Date: date of observation</li>
 <li>Movie: name of the movie</li>
-<li>GBO: GBO earned by the movie on that day</li>
+<li>GBO: Gross Box Office earned by the movie on that day</li>
 <li>Number of posts: posts on movies subreddit for the movie on that day</li>
 <li>DaysFromToRelease: # days before or after release, calculated as date - release_date. A negative value means number of days away from release, and a positive value means number of days after release</li>
 </ul>
@@ -316,18 +316,19 @@ $(document).ready(function () {
 <ul>
 <li>Declining trend of daliy GBO after release date</li>
 <li>On average, for each day after release, GBO declines by 3.5%</li>
-<li>Appears some decline faster than others</li>
+<li>Appears some movies decline faster than others</li>
 </ul>
 <p><em>How number of posts on Reddit vary before and after release date?</em></p>
 <p><img src="index_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <ul>
-<li>Number of posts increase as release date approaches, then declines. With the peak about 5 days after release date.</li>
+<li>Number of posts increase as movie’s release date approaches, then declines. With the peak about 5 days after release date.</li>
 </ul>
 <p><em>Do more posts have an impact on how GBO declines?</em></p>
 <p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>General observations:</p>
 <ul>
-<li>GBO of movies with more posts overall, declines sharply then flattens out</li>
-<li>For movies with lower number of posts, GBO keeps on declines at a steady rate then drops off quickly</li>
+<li>GBO, of movies with more posts overall, declines sharply then flattens out (red and blue dots)</li>
+<li>For movies with lower number of posts, GBO declines at a steady rate then drops off quickly (green dots)</li>
 </ul>
 <p><em>Does increasing posts increase GBO?</em> <img src="index_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <ul>
