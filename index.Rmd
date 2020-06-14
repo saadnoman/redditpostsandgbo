@@ -219,10 +219,17 @@ reg_data_gbo_posts %>%
 
 * On average, a 1% increase in daily number of posts, increases daily GBO by 1%
 
-*Check significance and R^2*
+
 ```{r eval = FALSE, echo = FALSE, warning = FALSE}
+#Check significance and R^2
 reg_data2 <- gbo_post_df_na_zero_cumsum %>%
   filter(release_date >= "2015-05-01" & log_gbo_daily_sum > 0)
 summary(lm(log_gbo_daily_sum ~ log_num_posts_sum, data = reg_data2))
 
 ```
+
+### Conclusion
+
+* There appears to be a positive association between the number of posts on Reddit and movie's daily GBO. We can hypothesize that people are influenced to go see the movie, if there are more people posting on social media about that movie.
+* Popular movies (that have more posts on Reddit) have a slower sharp decline from opening GBO but it flattens out
+* Less popular movies (that have less posts on Reddit) have an initial slower decline from opening GBO but then it drops off quickly 
