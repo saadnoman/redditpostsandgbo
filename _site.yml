@@ -1,4 +1,5 @@
 name: "Reddit Posts and GBO"
+output_dir: "docs"
 navbar:
   title: "Reddit Posts and GBO"
   left:
