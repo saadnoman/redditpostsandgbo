@@ -1,0 +1,121 @@
+---
+title: "Reddit Posts and Movie Gross Box Office"
+---
+
+
+## What is the daily GBO trendafter movie is released?
+```{r}
+
+gbo_post_df_long %>%
+  filter(release_date >= "2015-05-01") %>%
+  filter(series == "log_gbo_daily" & daysFromToRelease <=100) %>%
+  na.omit() %>%
+  ggplot(aes(x = daysFromToRelease, y = value)) +
+  geom_point() +
+  geom_smooth() + 
+  theme_bw() +
+  labs(title = "Decline in Daily GBO after release date", x = "Days After Release", y = "Log Daily GBO") +
+  geom_vline(xintercept = 0, linetype="dotted", 
+                color = "red", size=0.5) +
+  scale_x_continuous(limits = c(0,100))
+  
+
+```
+
+* Declining trend of daliy GBO after release date
+
+## How number of posts on Reddit vary before and after release date?
+```{r}
+
+gbo_post_df_long %>%
+  filter(release_date >= "2015-05-01") %>%
+  filter(series == "log_num_posts" & daysFromToRelease <=100) %>%
+  na.omit() %>%
+  ggplot(aes(x = daysFromToRelease, y = value)) +
+  geom_point() +
+  geom_smooth() +
+  geom_vline(xintercept = 0, linetype="dotted", 
+                color = "red", size=0.5) +
+  theme_bw() +
+  labs(title = "Number of Reddit Posts before and after release date", x = "Days Before/After Release (day 0 is release date)", y = "Log Number Posts") 
+  
+
+  
+
+```
+
+* Number of posts increase as release date approaches, then declines. With the peak about 5 days after release date.
+
+
+## Do more posts have an impact on how GBO declines? 
+```{r}
+# bin movies on num posts
+total_movie_posts <- gbo_post_df_long %>%
+  filter(release_date >= "2015-05-01") %>%
+  filter(series == "num_posts" & daysFromToRelease <=100) %>%
+  group_by(movie_name) %>% 
+  summarise(sum_posts = sum(value, na.rm = TRUE))
+
+total_movie_posts$posts_bin <- ifelse(total_movie_posts$sum_posts > 100, ">100 posts",
+                                     ifelse(total_movie_posts$sum_posts >= 1, "1-100 posts", "0 posts"))
+
+# visualize
+gbo_post_df_long %>%
+  filter(release_date >= "2015-05-01") %>%
+  filter(series == "log_gbo_daily" & daysFromToRelease <=100) %>%
+  inner_join(total_movie_posts, by = c("movie_name")) %>%
+  na.omit() %>%
+  ggplot(aes(x = daysFromToRelease, y = value, col = posts_bin)) +
+  geom_point() +
+  geom_smooth() + 
+  theme_bw() +
+  labs(title = "Decline in GBO after release date (binned by number of posts)", x = "Days After Release", y = "Log GBO") +
+  geom_vline(xintercept = 0, linetype="dotted", 
+                color = "red", size=0.5) +
+  scale_x_continuous(limits = c(0,100))
+  
+  
+```
+
+* GBO of movies with more posts overall, declines sharply then flattens out
+* For movies with lower number of posts, GBO keeps on declines at a steady rate
+
+
+## Does increasing posts increase GBO?
+```{r}
+# Rolling gbo and posts: each row =>  each day and movie, gbo made till that day, number of posts till that day
+gbo_post_df_na_zero <- gbo_post_df %>% mutate(gbo_daily = ifelse(is.na(gbo_daily), 0, gbo_daily),
+                       num_posts = ifelse(is.na(num_posts), 0, num_posts)) 
+
+gbo_post_df_na_zero_cumsum <- gbo_post_df_na_zero %>%
+  arrange(movie_name, date) %>%
+  group_by(movie_name) %>%
+  mutate(gbo_daily_sum = cumsum(gbo_daily),
+         num_posts_sum = cumsum(num_posts)) %>%
+  ungroup() %>%
+  mutate(daysFromToRelease = as.integer(daysFromToRelease),
+         log_gbo_daily_sum = log(gbo_daily_sum+1),
+         log_num_posts_sum = log(num_posts_sum+1))
+
+  
+gbo_post_df_na_zero_cumsum %>%
+  filter(release_date >= "2015-05-01" & log_gbo_daily_sum > 0) %>%
+  ggplot(aes(x = log_num_posts_sum, y = log_gbo_daily_sum)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_bw() +
+  labs(title = "Positive association of increasing GBO as Number of Posts increase", x = "Log Number of Posts", y = "Log Daily GBO")
+
+
+#num of movies: 34
+gbo_post_df_na_zero_cumsum %>%
+  filter(release_date >= "2015-05-01"  & log_gbo_daily_sum > 0) %>% distinct(movie_name)
+```
+
+## check significance and R^2
+```{r}
+reg_data2 <- gbo_post_df_na_zero_cumsum %>%
+  filter(release_date >= "2015-05-01" & log_gbo_daily_sum > 0)
+summary(lm(log_gbo_daily_sum ~ log_num_posts_sum, data = reg_data2))
+
+```

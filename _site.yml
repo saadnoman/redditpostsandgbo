@@ -1,0 +1,10 @@
+name: "Reddit Posts and GBO"
+navbar:
+  title: "Reddit Posts and GBO"
+  left:
+  - text: "Results"
+    href: "index.html"
+  - text: "Data Cleanup"
+    href: "dataprocess.html"
+  
+  
