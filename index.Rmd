@@ -1,5 +1,6 @@
 ---
 title: "Reddit Posts and Movie Gross Box Office"
+output: html_document
 ---
 
 
