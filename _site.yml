@@ -3,7 +3,7 @@ navbar:
   title: "Reddit Posts and GBO"
   left:
   - text: "Results"
-    href: "index.html"
+    href: "_site/index.html"
   - text: "Data Cleanup"
     href: "dataprocess.html"
   
