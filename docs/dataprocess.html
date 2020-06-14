@@ -11,7 +11,7 @@
 
 
 
-<title>Data Processing</title>
+<title>dataprocess.utf8</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -274,9 +274,6 @@ $(document).ready(function () {
         <li>
   <a href="index.html">Results</a>
 </li>
-<li>
-  <a href="dataprocess.html">Data Cleanup</a>
-</li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
         
@@ -289,54 +286,11 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">Data Processing</h1>
 
 </div>
 
 
-<div id="library-and-read-files" class="section level3">
-<h3>library and read files</h3>
-<pre class="r"><code>library(dplyr)
-library(ggplot2)
-library(tidyr)
 
-posts_df &lt;- read.csv(&quot;./data/movies_may_2015_posts.csv&quot;, stringsAsFactors = FALSE)
-gbo_df &lt;- read.csv(&quot;./data/movies_may_2015_gbo.csv&quot;, stringsAsFactors = FALSE)</code></pre>
-</div>
-<div id="data-clean-up" class="section level3">
-<h3>data clean up</h3>
-<pre class="r"><code>#fix date
-posts_df &lt;- posts_df %&gt;%
-  mutate(date_post = as.Date(created_date, &quot;%Y-%m-%d&quot;))
-
-gbo_df &lt;- gbo_df %&gt;%
-  mutate(gbo_date = as.Date(date, &quot;%m/%d/%y&quot;),
-         release_date = as.Date(release_date, &quot;%m/%d/%y&quot;))</code></pre>
-</div>
-<div id="join-data-sources" class="section level2">
-<h2>join data sources</h2>
-<pre class="r"><code># outer join posts and gbo on movie name and date.  each row =&gt; movie_name, date, gbo on that day, number of posts on that day
-gbo_post_df &lt;- posts_df %&gt;% 
-  group_by(movie_name, date_post) %&gt;% 
-  count() %&gt;% #count number of posts per movie on date
-  ungroup() %&gt;%
-  full_join(select(gbo_df, gbo_date, movie_name, Daily), by = c(&quot;movie_name&quot; = &quot;movie_name&quot;, &quot;date_post&quot; = &quot;gbo_date&quot;))
-names(gbo_post_df) &lt;- c(&quot;movie_name&quot;, &quot;date&quot;, &quot;num_posts&quot;, &quot;Daily&quot;)
-
-# covert gbo from char to num
-gbo_post_df &lt;- gbo_post_df %&gt;% mutate(gbo_daily = as.numeric(gsub(&quot;[$,]&quot;,&quot;&quot;,Daily)))
-gbo_post_df &lt;- select(gbo_post_df, -Daily)
-
-# calculate days from / to release date, and log values
-gbo_post_df &lt;- inner_join(gbo_post_df, select(gbo_df, movie_name, release_date) %&gt;% distinct(), by = c(&quot;movie_name&quot;)) %&gt;%
-  mutate(daysFromToRelease = date - release_date) %&gt;%
-  mutate(daysFromToRelease = as.integer(daysFromToRelease),
-         log_gbo_daily = log(gbo_daily),
-         log_num_posts = log(num_posts+1))
-  
-# pivot long
-gbo_post_df_long &lt;- pivot_longer(gbo_post_df, cols = c(&quot;num_posts&quot;,&quot;gbo_daily&quot;,&quot;log_num_posts&quot;,&quot;log_gbo_daily&quot;), names_to = &quot;series&quot;)</code></pre>
-</div>
 
 
 

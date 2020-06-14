@@ -3,10 +3,29 @@ title: "Reddit Posts and Movie Gross Box Office"
 output: html_document
 ---
 
+### Summary
 
 
-### library and read files
-```{r}
+Movies generally make the most box office earnings (Gross Box Office, GBO) during their opening week, after which the earnings decline in subsequent weeks. In this study, the goal is to see if and what effect social media “chatter” (specifically posts on Reddit) for a movie will have on its GBO after its release. Do more posts of the movie lead to slower decline of the movie’s GBO?
+
+*Data sources:*
+
+The data was obtained from the following and is limited to the month of May 2015
+
+* Reddit: using movies subreddit to determine number of posts
+* Box office mojo: to obtain daily movie GBO
+
+*Data dictionary*
+
+* Date
+* Movie: name of the movie
+* GBO: GBO earned by the movie on that day
+* Number of posts: posts on movies subreddit for the movie on that day
+* DaysFromToRelease: # days before or after release, calculated as date - release_date. A negative value means number of days away from release, and a positive value means number of days after release
+
+
+
+```{r include = FALSE}
 library(dplyr)
 library(ggplot2)
 library(tidyr)
@@ -16,8 +35,7 @@ gbo_df <- read.csv("./data/movies_may_2015_gbo.csv", stringsAsFactors = FALSE)
 
 ```
 
-### data clean up 
-```{r}
+```{r include = FALSE}
 
 #fix date
 posts_df <- posts_df %>%
@@ -31,8 +49,7 @@ gbo_df <- gbo_df %>%
 ```
 
 
-## join data sources
-```{r}
+```{r include = FALSE}
 # outer join posts and gbo on movie name and date.  each row => movie_name, date, gbo on that day, number of posts on that day
 gbo_post_df <- posts_df %>% 
   group_by(movie_name, date_post) %>% 
@@ -53,20 +70,33 @@ gbo_post_df <- inner_join(gbo_post_df, select(gbo_df, movie_name, release_date) 
          log_num_posts = log(num_posts+1))
   
 # pivot long
-gbo_post_df_long <- pivot_longer(gbo_post_df, cols = c("num_posts","gbo_daily","log_num_posts","log_gbo_daily"), names_to = "series")
-
+gbo_post_df_long <- pivot_longer(gbo_post_df, cols = c("num_posts","gbo_daily","log_num_posts","log_gbo_daily"), names_to = "series") 
 ```
 
-## What is the daily GBO trendafter movie is released?
-```{r}
+### Analysis
 
-gbo_post_df_long %>%
+
+*What is the daily GBO trend after the movie is released?*
+
+```{r echo = FALSE, message = FALSE}
+
+data_daily_gbo_trend <- gbo_post_df_long %>%
   filter(release_date >= "2015-05-01") %>%
   filter(series == "log_gbo_daily" & daysFromToRelease <=100) %>%
   na.omit() %>%
+  mutate(log_gbo_daily = value)
+
+reg_data_daily_gbo_trend <- summary(lm(log_gbo_daily ~ daysFromToRelease, data_daily_gbo_trend))
+reg_eq_data_daily_gbo_trend <- paste("Log(DailyGBO) =",format(reg_data_daily_gbo_trend$coefficients[1], digits = 2),
+      format(reg_data_daily_gbo_trend$coefficients[2], digits = 2),"DaysAfterRelease", ", R^2:",
+             format(reg_data_daily_gbo_trend$r.squared, digits = 2))
+
+
+data_daily_gbo_trend %>%
   ggplot(aes(x = daysFromToRelease, y = value)) +
   geom_point() +
-  geom_smooth() + 
+  geom_smooth(method = "lm") +
+  geom_text(x = 50, y = 17, label = reg_eq_data_daily_gbo_trend, col = "blue") +
   theme_bw() +
   labs(title = "Decline in Daily GBO after release date", x = "Days After Release", y = "Log Daily GBO") +
   geom_vline(xintercept = 0, linetype="dotted", 
@@ -74,12 +104,19 @@ gbo_post_df_long %>%
   scale_x_continuous(limits = c(0,100))
   
 
+
+
 ```
 
-* Declining trend of daliy GBO after release date
 
-## How number of posts on Reddit vary before and after release date?
-```{r}
+* Declining trend of daliy GBO after release date
+* On average, for each day after release, GBO declines by 3.5%
+* Appears some decline faster than others
+
+
+*How number of posts on Reddit vary before and after release date?*
+
+```{r echo = FALSE, message = FALSE}
 
 gbo_post_df_long %>%
   filter(release_date >= "2015-05-01") %>%
@@ -98,11 +135,13 @@ gbo_post_df_long %>%
 
 ```
 
+
 * Number of posts increase as release date approaches, then declines. With the peak about 5 days after release date.
 
 
-## Do more posts have an impact on how GBO declines? 
-```{r}
+*Do more posts have an impact on how GBO declines?*
+
+```{r echo = FALSE, message = FALSE}
 # bin movies on num posts
 total_movie_posts <- gbo_post_df_long %>%
   filter(release_date >= "2015-05-01") %>%
@@ -132,11 +171,11 @@ gbo_post_df_long %>%
 ```
 
 * GBO of movies with more posts overall, declines sharply then flattens out
-* For movies with lower number of posts, GBO keeps on declines at a steady rate
+* For movies with lower number of posts, GBO keeps on declines at a steady rate then drops off quickly
 
 
-## Does increasing posts increase GBO?
-```{r}
+*Does increasing posts increase GBO?*
+```{r echo = FALSE, message = FALSE}
 # Rolling gbo and posts: each row =>  each day and movie, gbo made till that day, number of posts till that day
 gbo_post_df_na_zero <- gbo_post_df %>% mutate(gbo_daily = ifelse(is.na(gbo_daily), 0, gbo_daily),
                        num_posts = ifelse(is.na(num_posts), 0, num_posts)) 
@@ -151,23 +190,37 @@ gbo_post_df_na_zero_cumsum <- gbo_post_df_na_zero %>%
          log_gbo_daily_sum = log(gbo_daily_sum+1),
          log_num_posts_sum = log(num_posts_sum+1))
 
-  
-gbo_post_df_na_zero_cumsum %>%
+reg_data_gbo_posts <-   gbo_post_df_na_zero_cumsum %>%
   filter(release_date >= "2015-05-01" & log_gbo_daily_sum > 0) %>%
-  ggplot(aes(x = log_num_posts_sum, y = log_gbo_daily_sum)) +
+  select(log_gbo_daily_sum, log_num_posts_sum, movie_name)
+names(reg_data_gbo_posts) <- c("LogCumulativeDailyGBO", "LogCumulativeDailyNumPosts","movie_name")
+
+
+reg_data_gbo_posts_sum <- summary(lm(LogCumulativeDailyGBO ~ LogCumulativeDailyNumPosts, reg_data_gbo_posts))
+reg_data_gbo_posts_eq <- paste("Log(CumulativeDailyGBO) =",format(reg_data_gbo_posts_sum$coefficients[1], digits = 2),
+      "+",format(reg_data_gbo_posts_sum$coefficients[2], digits = 3),"Log(CumulativeDailyNumPosts)", ", R^2:",
+             format(reg_data_gbo_posts_sum$r.squared, digits = 3))
+
+
+reg_data_gbo_posts %>%
+  ggplot(aes(x = LogCumulativeDailyNumPosts, y = LogCumulativeDailyGBO)) +
   geom_point() +
   geom_smooth(method = "lm") +
+  geom_text(x = 3, y = 3, label = reg_data_gbo_posts_eq, col = "blue") +
   theme_bw() +
-  labs(title = "Positive association of increasing GBO as Number of Posts increase", x = "Log Number of Posts", y = "Log Daily GBO")
+  #guides(color = FALSE) + 
+  labs(title = "Positive association of increasing GBO as Number of Posts increase", x = "Log Cumulative Daily Number of Posts", y = "Log Cumulative Daily GBO")
 
 
 #num of movies: 34
-gbo_post_df_na_zero_cumsum %>%
-  filter(release_date >= "2015-05-01"  & log_gbo_daily_sum > 0) %>% distinct(movie_name)
+#gbo_post_df_na_zero_cumsum %>%
+#  filter(release_date >= "2015-05-01"  & log_gbo_daily_sum > 0) %>% distinct(movie_name)
 ```
 
-## check significance and R^2
-```{r}
+* On average, a 1% increase in daily number of posts, increases daily GBO by 1%
+
+*Check significance and R^2*
+```{r eval = FALSE, echo = FALSE, warning = FALSE}
 reg_data2 <- gbo_post_df_na_zero_cumsum %>%
   filter(release_date >= "2015-05-01" & log_gbo_daily_sum > 0)
 summary(lm(log_gbo_daily_sum ~ log_num_posts_sum, data = reg_data2))

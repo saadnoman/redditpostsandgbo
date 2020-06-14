@@ -5,7 +5,5 @@ navbar:
   left:
   - text: "Results"
     href: "index.html"
-  - text: "Data Cleanup"
-    href: "dataprocess.html"
-  
+
   
